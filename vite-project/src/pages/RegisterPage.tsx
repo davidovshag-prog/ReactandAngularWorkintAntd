@@ -1,9 +1,7 @@
-import {Button, Form, Input} from "antd";
+import {Button, Form, Input, Upload} from "antd";
 import type {IRegisterForm} from "../types/IRegisterForm.ts";
 import {UserOutlined} from "@ant-design/icons";
-import Dragger from "antd/es/upload/Dragger";
 import {useState} from "react";
-import type {RcFile} from "antd/es/upload";
 
 const RegisterPage = () =>
 {
@@ -11,12 +9,28 @@ const RegisterPage = () =>
     const [form] = Form.useForm<IRegisterForm>();
 
     const [myFileUpload, setMyFileUpload] =
-        useState<RcFile|undefined>(undefined);
+        useState<File|null>(null);
 
     //Коли будемо нажимати кнопку реєстрація
     const onSubmitHandler = (values: IRegisterForm) => {
         console.log("Submit Result", values);
     }
+
+    //Коли ми обрали файл із зображенням
+    const normFile = (e: any) => {
+        console.log('Upload event:', e);
+        if (Array.isArray(e)) {
+            return e;
+        }
+        const n = e?.fileList.length;
+
+        if(n<1){
+            setMyFileUpload(null);
+            return e?.fileList;}
+        setMyFileUpload(e?.fileList[n-1].originFileObj);
+        // console.log("select file", e?.fileList[n-1]);
+        return [e?.fileList[n-1]];
+    };
 
 
     return (
@@ -86,58 +100,33 @@ const RegisterPage = () =>
                         <Form.Item<IRegisterForm>
                             label={"Підтвердження паролю"}
                             name={"confirmPassword"}
-                            dependencies={['password']}
-                            rules={[
-                                { required: true, message: "Вкажіть підтвердження паролю" },
-                                ({ getFieldValue }) => ({
-                                    validator(_, value) {
-                                        if (!value || getFieldValue('password') === value) {
-                                            return Promise.resolve();
-                                        }
-                                        return Promise.reject(new Error('Паролі не співпадають!'));
-                                    },
-                                }),
-                            ]}
+                            rules={[{required: true, message: "Вкажіть підтвердження паролю"}]}
                         >
-                            <Input.Password />
+                            <Input/>
                         </Form.Item>
 
-
-                        <Form.Item<IRegisterForm>
-                            label={"Завантаження фото"}
-                            name={"image"}
-                            rules={[{required: true, message: "Додайте фото."}]}
-                            valuePropName={"fileList"}
-                            getValueFromEvent={(e: any) => e?.fileList}
-                        >
-                        <Dragger name={'file'}
-                                 multiple={false}
-                                 beforeUpload = { (file) => {
-                                     console.log('Selected file:', file);
-                                     return false;
-                                 }}
-                                 onChange = {(info) => {
-                                     console.log("info", info);
-                                     setMyFileUpload(info.file.originFileObj);
-                                     // console.log("info", info.file.originFileObj);
-                                 }}
-                        >
-                            <p className="ant-upload-drag-icon">
-                                {myFileUpload != undefined ?
-                                    <img src={URL.createObjectURL(myFileUpload)}
-                                         width="150px" alt=""/>
-                                    :
-                                    <UserOutlined />
-                                }
-                            </p>
-                            <p className="ant-upload-text">
-                                Натисніть або перетягніть файл у цю область, щоб завантажити
-                            </p>
-                            <p className="ant-upload-hint">
-                                Оберіть один файл для вашого фото
-                            </p>
-                        </Dragger>
+                        <Form.Item label="Оберіть фото">
+                            <Form.Item<IRegisterForm> name="image" valuePropName="fileList"
+                                                      getValueFromEvent={normFile}
+                                                      noStyle>
+                                <Upload.Dragger name="files" multiple={false}
+                                                listType="picture"
+                                                accept={"image/*"}
+                                                beforeUpload={() => {return false;}}
+                                >
+                                    <p className="ant-upload-drag-icon">
+                                        { myFileUpload ?
+                                            <img src={URL.createObjectURL(myFileUpload)}
+                                                 width={200}/>
+                                            :
+                                            <UserOutlined />
+                                        }
+                                    </p>
+                                    <p className="ant-upload-text">Натисніть або перетягніть фото</p>
+                                    <p className="ant-upload-hint">Support for a single or bulk upload.</p>
+                                </Upload.Dragger>
                             </Form.Item>
+                        </Form.Item>
 
                         <div className={"pt-4 flex justify-center"}>
                             <Form.Item label = {null}>
